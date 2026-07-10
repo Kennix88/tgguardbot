@@ -1,5 +1,5 @@
 services:
-    postgres:
+    tgguardbot-postgres:
         image: postgres:16-alpine
         restart: unless-stopped
         environment:
@@ -20,7 +20,7 @@ services:
             timeout: 5s
             retries: 10
 
-    redis:
+    tgguardbot-redis:
         image: redis:7-alpine
         restart: unless-stopped
         command: ["redis-server", "--appendonly", "yes"]
@@ -34,7 +34,7 @@ services:
             timeout: 5s
             retries: 10
 
-    bot:
+    tgguardbot:
         build: .
         restart: unless-stopped
         depends_on:
@@ -62,7 +62,7 @@ services:
         # Long-polling: no public ports required.
         # Logs go to stdout (docker logs).
 
-    pg-backup:
+    tgguardbot-pg-backup:
         image: postgres:16-alpine
         container_name: pg-backup
         restart: unless-stopped
