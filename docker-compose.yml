@@ -1,6 +1,7 @@
 services:
     tgguardbot-postgres:
         image: postgres:16-alpine
+        container_name: tgguardbot-postgres
         restart: unless-stopped
         environment:
             POSTGRES_USER: ${POSTGRES_USER:-antispam}
@@ -23,6 +24,7 @@ services:
     tgguardbot-redis:
         image: redis:7-alpine
         restart: unless-stopped
+        container_name: tgguardbot-redis
         command: ["redis-server", "--appendonly", "yes"]
         volumes:
             - redis_data:/data
@@ -37,6 +39,7 @@ services:
     tgguardbot-bot:
         build: .
         restart: unless-stopped
+        container_name: tgguardbot-bot
         depends_on:
             postgres:
                 condition: service_healthy
@@ -64,7 +67,7 @@ services:
 
     tgguardbot-pg-backup:
         image: postgres:16-alpine
-        container_name: pg-backup
+        container_name: tgguardbot-pg-backup
         restart: unless-stopped
         depends_on:
             postgres:
