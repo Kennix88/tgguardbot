@@ -46,8 +46,8 @@ services:
             tgguardbot-redis:
                 condition: service_healthy
         environment:
-            DATABASE_URL: postgresql://${POSTGRES_USER:-antispam}:${POSTGRES_PASSWORD:-antispam}@postgres:5432/${POSTGRES_DB:-antispam}
-            REDIS_URL: redis://redis:6379
+            DATABASE_URL: postgresql://${POSTGRES_USER:-antispam}:${POSTGRES_PASSWORD:-antispam}@tgguardbot-postgres:5432/${POSTGRES_DB:-antispam}
+            REDIS_URL: redis://tgguardbot-redis:6379
             BOT_TOKEN: ${BOT_TOKEN}
             SUPER_ADMIN_IDS: ${SUPER_ADMIN_IDS}
             FREE_TIER_MAX_USERS: ${FREE_TIER_MAX_USERS:-300}
@@ -73,7 +73,7 @@ services:
             tgguardbot-postgres:
                 condition: service_healthy
         environment:
-            - POSTGRES_HOST=postgres
+            - POSTGRES_HOST=tgguardbot-postgres
             - POSTGRES_USER=${POSTGRES_USER:-antispam}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-antispam}
             - POSTGRES_DB=${POSTGRES_DB:-antispam}
