@@ -34,7 +34,7 @@ services:
             timeout: 5s
             retries: 10
 
-    tgguardbot:
+    tgguardbot-bot:
         build: .
         restart: unless-stopped
         depends_on:
