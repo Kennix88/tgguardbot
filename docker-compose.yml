@@ -41,9 +41,9 @@ services:
         restart: unless-stopped
         container_name: tgguardbot-bot
         depends_on:
-            postgres:
+            tgguardbot-postgres:
                 condition: service_healthy
-            redis:
+            tgguardbot-redis:
                 condition: service_healthy
         environment:
             DATABASE_URL: postgresql://${POSTGRES_USER:-antispam}:${POSTGRES_PASSWORD:-antispam}@postgres:5432/${POSTGRES_DB:-antispam}
@@ -70,7 +70,7 @@ services:
         container_name: tgguardbot-pg-backup
         restart: unless-stopped
         depends_on:
-            postgres:
+            tgguardbot-postgres:
                 condition: service_healthy
         environment:
             - POSTGRES_HOST=postgres
