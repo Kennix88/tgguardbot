@@ -1,0 +1,93 @@
+services:
+    postgres:
+        image: postgres:16-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-antispam}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-antispam}
+            POSTGRES_DB: ${POSTGRES_DB:-antispam}
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "127.0.0.1:5433:5432" # local-only; remove to fully hide
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "pg_isready -U ${POSTGRES_USER:-antispam} -d ${POSTGRES_DB:-antispam}",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+
+    redis:
+        image: redis:7-alpine
+        restart: unless-stopped
+        command: ["redis-server", "--appendonly", "yes"]
+        volumes:
+            - redis_data:/data
+        ports:
+            - "127.0.0.1:6380:6379"
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+
+    bot:
+        build: .
+        restart: unless-stopped
+        depends_on:
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        environment:
+            DATABASE_URL: postgresql://${POSTGRES_USER:-antispam}:${POSTGRES_PASSWORD:-antispam}@postgres:5432/${POSTGRES_DB:-antispam}
+            REDIS_URL: redis://redis:6379
+            BOT_TOKEN: ${BOT_TOKEN}
+            SUPER_ADMIN_IDS: ${SUPER_ADMIN_IDS}
+            FREE_TIER_MAX_USERS: ${FREE_TIER_MAX_USERS:-300}
+            FREE_TIER_MAX_MSGS_PER_HOUR: ${FREE_TIER_MAX_MSGS_PER_HOUR:-500}
+            LLM_ENABLED: ${LLM_ENABLED:-false}
+            LLM_PROVIDER: ${LLM_PROVIDER:-}
+            LLM_API_KEY: ${LLM_API_KEY:-}
+            LOG_LEVEL: ${LOG_LEVEL:-info}
+            LOG_PRETTY: ${LOG_PRETTY:-false}
+            CAPTCHA_MAX_ATTEMPTS: ${CAPTCHA_MAX_ATTEMPTS:-3}
+            CAPTCHA_TIMEOUT_SEC: ${CAPTCHA_TIMEOUT_SEC:-60}
+            CAS_CHECK_ENABLED: ${CAS_CHECK_ENABLED:-true}
+            # Optional Telegram API mirror/proxy. Empty = default api.telegram.org.
+            GRASPIL_PROXY_URL: ${GRASPIL_PROXY_URL:-}
+        # Long-polling: no public ports required.
+        # Logs go to stdout (docker logs).
+
+    pg-backup:
+        image: postgres:16-alpine
+        container_name: pg-backup
+        restart: unless-stopped
+        depends_on:
+            postgres:
+                condition: service_healthy
+        environment:
+            - POSTGRES_HOST=postgres
+            - POSTGRES_USER=${POSTGRES_USER:-antispam}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-antispam}
+            - POSTGRES_DB=${POSTGRES_DB:-antispam}
+            - TELEGRAM_BOT_TOKEN=${BOT_TOKEN}
+            # Comma-separated list of Telegram chat ids to receive backups.
+            # Defaults to SUPER_ADMIN_IDS (each owner gets the dump in DM).
+            - TELEGRAM_LOG_CHAT_ID=${TELEGRAM_LOG_CHAT_ID:-${SUPER_ADMIN_IDS}}
+            - TELEGRAM_THREAD_ID_BACKUPS=${TELEGRAM_THREAD_ID_BACKUPS:-}
+            - GRASPIL_PROXY_URL=${GRASPIL_PROXY_URL:-}
+            - CRON_SCHEDULE=${CRON_SCHEDULE:-0 */6 * * *}
+        tmpfs:
+            - /tmp:size=512m,mode=1777
+        volumes:
+            - ./docker/pg-backup/backup.sh:/backup.sh:ro
+        entrypoint: ["/bin/sh", "/backup.sh"]
+        # Logs go to stdout (docker logs -f pg-backup).
+
+volumes:
+    postgres_data:
+    redis_data:

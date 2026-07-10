@@ -1,0 +1,117 @@
+// Prisma schema for antispam-bot
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Chat {
+  id                     BigInt    @id
+  title                  String?
+  approved               Boolean   @default(false)
+  subscriptionActive     Boolean   @default(false)
+  subscriptionExpiresAt  DateTime?
+  linkMode               LinkMode  @default(DELETE_ALL)
+  captchaEnabled         Boolean   @default(true)
+  captchaTimeoutSec      Int       @default(90)
+  captchaTopicId         Int?
+  muteInsteadOfBan       Boolean   @default(true)
+  createdAt              DateTime  @default(now())
+
+  banWords         BanWord[]
+  whitelistEntries WhitelistEntry[]
+  memberships      ChatMembership[]
+  moderationLogs   ModerationLog[]
+}
+
+enum LinkMode {
+  ALLOW
+  WHITELIST_ONLY
+  DELETE_ALL
+}
+
+model BanWord {
+  id        String   @id @default(cuid())
+  chatId    BigInt
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  pattern   String
+  isRegex   Boolean  @default(false)
+  addedBy   BigInt
+  createdAt DateTime @default(now())
+
+  @@unique([chatId, pattern])
+}
+
+model WhitelistEntry {
+  id        String        @id @default(cuid())
+  chatId    BigInt
+  chat      Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  type      WhitelistType
+  value     String
+  addedBy   BigInt
+  createdAt DateTime      @default(now())
+
+  @@unique([chatId, type, value])
+}
+
+enum WhitelistType {
+  DOMAIN
+  WORD
+}
+
+model GlobalUserFlag {
+  userId       BigInt     @id
+  status       FlagStatus @default(SUSPECT)
+  reason       String?
+  reportedFrom BigInt?
+  score        Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+enum FlagStatus {
+  SUSPECT
+  BOT_DETECT
+  GLOBAL_BANNED
+}
+
+model ChatMembership {
+  chatId          BigInt
+  userId          BigInt
+  chat            Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  status          MemberStatus @default(PENDING)
+  captchaAttempts Int          @default(0)
+  warnCount       Int          @default(0)
+  joinedAt        DateTime     @default(now())
+
+  @@id([chatId, userId])
+}
+
+enum MemberStatus {
+  PENDING
+  VERIFIED
+  RESTRICTED
+  BANNED
+}
+
+model ModerationLog {
+  id        String   @id @default(cuid())
+  chatId    BigInt
+  userId    BigInt
+  action    String
+  score     Int?
+  text      String?
+  confirmed Boolean  @default(false)
+  reverted  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+  @@index([userId])
+}

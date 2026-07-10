@@ -1,0 +1,40 @@
+{
+  "name": "antispam-bot",
+  "version": "0.1.0",
+  "description": "Self-hosted Telegram antispam/moderation bot (captcha, ban-words, link filtering, global banlist).",
+  "license": "MIT",
+  "private": true,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "prisma generate && tsc",
+    "postinstall": "prisma generate",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@grammyjs/conversations": "^1.2.0",
+    "@napi-rs/canvas": "^1.0.2",
+    "@prisma/client": "^5.22.0",
+    "bullmq": "^5.34.0",
+    "dotenv": "^16.4.7",
+    "grammy": "^1.33.0",
+    "ioredis": "^5.4.2",
+    "pino": "^9.5.0",
+    "prisma": "^5.22.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "pino-pretty": "^13.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
